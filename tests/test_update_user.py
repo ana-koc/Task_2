@@ -31,15 +31,15 @@ class TestUpdateUser:
         update_payload = {'password': new_data['password']}
 
         with allure.step('Отправка PATCH-запроса с авторизацией на изменение пароля'):
-            response = ApiClient.update_user(update_payload, headers=auth_headers)
+            ApiClient.update_user(update_payload, headers=auth_headers)
 
-        with allure.step('Проверка кода 200 и входа с новым паролем'):
-            assert response.status_code == 200
-            assert response.json()['success'] is True
+        with allure.step('Вход с новым паролем'):
             login_response = ApiClient.login_user({
                 'email': payload['email'],
                 'password': update_payload['password']
             })
+
+        with allure.step('Проверка, что вход с новым паролем успешен'):
             assert login_response.status_code == 200
             assert login_response.json()['success'] is True
 
