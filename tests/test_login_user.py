@@ -1,7 +1,7 @@
 import allure
-import pytest
-import requests
-from constants import Urls, ErrorMessages
+from api_client import ApiClient
+from constants import ErrorMessages
+from data import LoginData
 
 
 @allure.epic('API Stellar Burgers')
@@ -17,7 +17,7 @@ class TestLoginUser:
         }
 
         with allure.step('Отправка POST-запроса на авторизацию с валидными данными'):
-            response = requests.post(f'{Urls.BASE_URL}{Urls.LOGIN_PATH}', json=login_payload)
+            response = ApiClient.login_user(login_payload)
 
         response_data = response.json()
         with allure.step('Проверка кода 200 и возвращаемых токенов'):
@@ -28,27 +28,38 @@ class TestLoginUser:
             assert 'accessToken' in response_data
             assert 'refreshToken' in response_data
 
-    @allure.title('Ошибка при авторизации с неверными данными: {scenario_name}')
-    @pytest.mark.parametrize(
-        'scenario_name, wrong_email, wrong_password',
-        [
-            ('неверный email', 'nonexistent_email_12345@test.com', 'correct_pass'),
-            ('неверный пароль', None, 'wrong_password_12345'),
-            ('неверный email и пароль', 'nonexistent_email_12345@test.com', 'wrong_password_12345'),
-        ]
-    )
-    def test_login_wrong_credentials_error(self, registered_user, scenario_name, wrong_email, wrong_password):
+    @allure.title('Ошибка при авторизации с неверным email')
+    def test_login_with_wrong_email(self, registered_user):
         payload, _ = registered_user
-        email = wrong_email if wrong_email is not None else payload['email']
-        password = wrong_password
+        response = ApiClient.login_user({
+            'email': LoginData.WRONG_EMAIL,
+            'password': payload['password']
+        })
 
-        login_payload = {
-            'email': email,
-            'password': password
-        }
+        with allure.step('Проверка кода 401 и сообщения об ошибке'):
+            assert response.status_code == 401
+            assert response.json()['success'] is False
+            assert response.json()['message'] == ErrorMessages.INCORRECT_CREDENTIALS
 
-        with allure.step(f'Отправка запроса на логин ({scenario_name})'):
-            response = requests.post(f'{Urls.BASE_URL}{Urls.LOGIN_PATH}', json=login_payload)
+    @allure.title('Ошибка при авторизации с неверным паролем')
+    def test_login_with_wrong_password(self, registered_user):
+        payload, _ = registered_user
+        response = ApiClient.login_user({
+            'email': payload['email'],
+            'password': LoginData.WRONG_PASSWORD
+        })
+
+        with allure.step('Проверка кода 401 и сообщения об ошибке'):
+            assert response.status_code == 401
+            assert response.json()['success'] is False
+            assert response.json()['message'] == ErrorMessages.INCORRECT_CREDENTIALS
+
+    @allure.title('Ошибка при авторизации с неверными email и паролем')
+    def test_login_with_wrong_email_and_password(self):
+        response = ApiClient.login_user({
+            'email': LoginData.WRONG_EMAIL,
+            'password': LoginData.WRONG_PASSWORD
+        })
 
         with allure.step('Проверка кода 401 и сообщения об ошибке'):
             assert response.status_code == 401

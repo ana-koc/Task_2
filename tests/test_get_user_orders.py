@@ -1,6 +1,6 @@
 import allure
-import requests
-from constants import Urls, ErrorMessages
+from api_client import ApiClient
+from constants import ErrorMessages
 
 
 @allure.epic('API Stellar Burgers')
@@ -9,21 +9,13 @@ class TestGetUserOrders:
 
     @allure.title('Успешное получение списка заказов авторизованного пользователя')
     def test_get_user_orders_authorized_success(self, auth_headers, available_ingredients):
-        # Создаем заказ для пользователя, чтобы в списке гарантированно был заказ
         order_payload = {'ingredients': available_ingredients[:2]}
         with allure.step('Создание заказа для пользователя перед проверкой'):
-            create_resp = requests.post(
-                f'{Urls.BASE_URL}{Urls.ORDERS_PATH}',
-                headers=auth_headers,
-                json=order_payload
-            )
+            create_resp = ApiClient.create_order(order_payload, headers=auth_headers)
             created_order_number = create_resp.json()['order']['number']
 
         with allure.step('Отправка GET-запроса на получение заказов авторизованного пользователя'):
-            response = requests.get(
-                f'{Urls.BASE_URL}{Urls.ORDERS_PATH}',
-                headers=auth_headers
-            )
+            response = ApiClient.get_orders(headers=auth_headers)
 
         response_data = response.json()
         with allure.step('Проверка кода 200, структуры ответа и наличия созданного заказа'):
@@ -36,7 +28,7 @@ class TestGetUserOrders:
     @allure.title('Ошибка при получении списка заказов неавторизованным пользователем')
     def test_get_user_orders_unauthorized_error(self):
         with allure.step('Отправка GET-запроса на получение заказов БЕЗ заголовка Authorization'):
-            response = requests.get(f'{Urls.BASE_URL}{Urls.ORDERS_PATH}')
+            response = ApiClient.get_orders()
 
         response_data = response.json()
         with allure.step('Проверка кода 401 и сообщения о необходимости авторизации'):

@@ -1,6 +1,7 @@
 import allure
-import requests
-from constants import Urls, ErrorMessages
+from api_client import ApiClient
+from constants import ErrorMessages
+from data import OrderData
 
 
 @allure.epic('API Stellar Burgers')
@@ -9,15 +10,10 @@ class TestCreateOrder:
 
     @allure.title('Создание заказа авторизованным пользователем с валидными ингредиентами')
     def test_create_order_authorized_with_ingredients_success(self, auth_headers, available_ingredients):
-        ingredients = available_ingredients[:2]
-        payload = {'ingredients': ingredients}
+        payload = {'ingredients': available_ingredients[:2]}
 
         with allure.step('Отправка POST-запроса на создание заказа с авторизацией'):
-            response = requests.post(
-                f'{Urls.BASE_URL}{Urls.ORDERS_PATH}',
-                headers=auth_headers,
-                json=payload
-            )
+            response = ApiClient.create_order(payload, headers=auth_headers)
 
         response_data = response.json()
         with allure.step('Проверка кода 200, success: True и наличия номера заказа'):
@@ -28,14 +24,10 @@ class TestCreateOrder:
 
     @allure.title('Создание заказа неавторизованным пользователем с ингредиентами')
     def test_create_order_unauthorized_with_ingredients_success(self, available_ingredients):
-        ingredients = available_ingredients[:2]
-        payload = {'ingredients': ingredients}
+        payload = {'ingredients': available_ingredients[:2]}
 
         with allure.step('Отправка POST-запроса на создание заказа без авторизации'):
-            response = requests.post(
-                f'{Urls.BASE_URL}{Urls.ORDERS_PATH}',
-                json=payload
-            )
+            response = ApiClient.create_order(payload)
 
         response_data = response.json()
         with allure.step('Проверка кода 200 и успешного создания заказа'):
@@ -49,11 +41,7 @@ class TestCreateOrder:
         payload = {'ingredients': []}
 
         with allure.step('Отправка POST-запроса на создание заказа с пустым списком ингредиентов'):
-            response = requests.post(
-                f'{Urls.BASE_URL}{Urls.ORDERS_PATH}',
-                headers=auth_headers,
-                json=payload
-            )
+            response = ApiClient.create_order(payload, headers=auth_headers)
 
         response_data = response.json()
         with allure.step('Проверка кода 400 и сообщения об обязательности ингредиентов'):
@@ -63,14 +51,10 @@ class TestCreateOrder:
 
     @allure.title('Ошибка при создании заказа с невалидным хешем ингредиента')
     def test_create_order_invalid_ingredient_hash_error(self, auth_headers):
-        payload = {'ingredients': ['invalid_ingredient_hash_99999']}
+        payload = {'ingredients': [OrderData.INVALID_INGREDIENT_HASH]}
 
         with allure.step('Отправка POST-запроса с невалидным хешем ингредиента'):
-            response = requests.post(
-                f'{Urls.BASE_URL}{Urls.ORDERS_PATH}',
-                headers=auth_headers,
-                json=payload
-            )
+            response = ApiClient.create_order(payload, headers=auth_headers)
 
         # Сервер отвечает HTML-страницей, а не JSON
         with allure.step('Проверка кода 500 и текста Internal Server Error'):
