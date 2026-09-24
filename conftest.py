@@ -11,30 +11,28 @@ def registered_user():
     response_data = response.json()
     access_token = response_data.get('accessToken')
 
-    yield payload, response_data
+    yield payload, response_data, access_token
 
     if access_token:
         ApiClient.delete_user(access_token)
 
 
 @pytest.fixture
-def created_user():
-    """Ответ регистрации нового пользователя. Токен удаляется после теста."""
+def user_payload():
+    """Генерация данных пользователя без вызова регистрации. Удаление в teardown по токену."""
     payload = UserDataGenerator.generate_user_payload()
-    response = ApiClient.register_user(payload)
-    access_token = response.json().get('accessToken')
+    token_holder = [None]
 
-    yield payload, response
+    yield payload, token_holder
 
-    if access_token:
-        ApiClient.delete_user(access_token)
+    if token_holder[0]:
+        ApiClient.delete_user(token_holder[0])
 
 
 @pytest.fixture
 def auth_headers(registered_user):
     """Заголовки авторизации с токеном зарегистрированного пользователя."""
-    _, response_data = registered_user
-    access_token = response_data.get('accessToken')
+    _, _, access_token = registered_user
     return {'Authorization': access_token}
 
 

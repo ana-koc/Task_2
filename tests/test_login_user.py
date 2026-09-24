@@ -10,7 +10,7 @@ class TestLoginUser:
 
     @allure.title('Успешный логин под существующим пользователем')
     def test_login_existing_user_success(self, registered_user):
-        payload, _ = registered_user
+        payload, _, _ = registered_user
         login_payload = {
             'email': payload['email'],
             'password': payload['password']
@@ -30,11 +30,13 @@ class TestLoginUser:
 
     @allure.title('Ошибка при авторизации с неверным email')
     def test_login_with_wrong_email(self, registered_user):
-        payload, _ = registered_user
-        response = ApiClient.login_user({
-            'email': LoginData.WRONG_EMAIL,
-            'password': payload['password']
-        })
+        payload, _, _ = registered_user
+
+        with allure.step('Отправка POST-запроса на авторизацию с неверным email'):
+            response = ApiClient.login_user({
+                'email': LoginData.WRONG_EMAIL,
+                'password': payload['password']
+            })
 
         with allure.step('Проверка кода 401 и сообщения об ошибке'):
             assert response.status_code == 401
@@ -43,11 +45,13 @@ class TestLoginUser:
 
     @allure.title('Ошибка при авторизации с неверным паролем')
     def test_login_with_wrong_password(self, registered_user):
-        payload, _ = registered_user
-        response = ApiClient.login_user({
-            'email': payload['email'],
-            'password': LoginData.WRONG_PASSWORD
-        })
+        payload, _, _ = registered_user
+
+        with allure.step('Отправка POST-запроса на авторизацию с неверным паролем'):
+            response = ApiClient.login_user({
+                'email': payload['email'],
+                'password': LoginData.WRONG_PASSWORD
+            })
 
         with allure.step('Проверка кода 401 и сообщения об ошибке'):
             assert response.status_code == 401
@@ -56,10 +60,12 @@ class TestLoginUser:
 
     @allure.title('Ошибка при авторизации с неверными email и паролем')
     def test_login_with_wrong_email_and_password(self):
-        response = ApiClient.login_user({
-            'email': LoginData.WRONG_EMAIL,
-            'password': LoginData.WRONG_PASSWORD
-        })
+
+        with allure.step('Отправка POST-запроса на авторизацию с неверными email и паролем'):
+            response = ApiClient.login_user({
+                'email': LoginData.WRONG_EMAIL,
+                'password': LoginData.WRONG_PASSWORD
+            })
 
         with allure.step('Проверка кода 401 и сообщения об ошибке'):
             assert response.status_code == 401

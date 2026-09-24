@@ -26,7 +26,7 @@ class TestUpdateUser:
 
     @allure.title('Успешное изменение пароля авторизованного пользователя')
     def test_update_password_with_auth(self, registered_user, auth_headers):
-        payload, _ = registered_user
+        payload, _, _ = registered_user
         new_data = UserDataGenerator.generate_user_payload()
         update_payload = {'password': new_data['password']}
 

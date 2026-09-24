@@ -10,9 +10,14 @@ from data import UserDataGenerator, UserFields
 class TestCreateUser:
 
     @allure.title('Успешное создание уникального пользователя')
-    def test_create_unique_user_success(self, created_user):
-        payload, response = created_user
+    def test_create_unique_user_success(self, user_payload):
+        payload, token_holder = user_payload
+
+        with allure.step('Отправка POST-запроса на регистрацию нового пользователя'):
+            response = ApiClient.register_user(payload)
+
         response_data = response.json()
+        token_holder[0] = response_data.get('accessToken')
 
         with allure.step('Проверка статуса ответа и структуры тела'):
             assert response.status_code == 200
@@ -24,7 +29,7 @@ class TestCreateUser:
 
     @allure.title('Ошибка при создании уже зарегистрированного пользователя')
     def test_create_existing_user_error(self, registered_user):
-        payload, _ = registered_user
+        payload, _, _ = registered_user
 
         with allure.step('Повторная отправка запроса на регистрацию с теми же данными'):
             response = ApiClient.register_user(payload)
